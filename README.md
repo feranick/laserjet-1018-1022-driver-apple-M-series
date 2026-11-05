@@ -7,6 +7,21 @@ need Rosetta. This driver is plain C. It builds as a universal binary
 
 Version: 2026.11.05.1 · License: MIT
 
+## Linux
+
+This driver is not needed on Linux. Use **foo2zjs** instead: it is packaged
+by most distributions (`printer-driver-foo2zjs` on Debian/Ubuntu,
+`foo2zjs` elsewhere), and its hotplug script uploads the 1018/1020
+firmware automatically when the printer is switched on. HP's HPLIP,
+together with its proprietary plugin (`hp-plugin`), also supports these
+models.
+
+This project builds on the work of foo2zjs by Rick Richardson. foo2zjs
+first documented the ZjStream protocol, and this driver uses its
+protocol names and its firmware files (`sihp1018.dl`, `sihp1020.dl`).
+The code itself is an independent implementation, written from the
+behaviour of HP's macOS filter; it contains no foo2zjs code.
+
 ## Requirements
 
 - macOS 11 (Big Sur) or later, on Apple Silicon or Intel.
