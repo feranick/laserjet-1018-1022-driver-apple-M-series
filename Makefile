@@ -52,10 +52,10 @@ build/ppd/HP-LaserJet-%-hpzjs.ppd: ppd/hpzjs.ppd.in | build
 	    -e "s/@PPM@/$$ppm/g" -e "s/@FWMODEL@/$$fw/g" $< > $@
 
 install: all
-	sudo ./install.sh
+	sudo bash ./install.sh
 
 uninstall:
-	sudo ./uninstall.sh
+	sudo bash ./uninstall.sh
 
 # Binary release: dist/hpzjs-VERSION-macos.tar.gz
 dist: all
