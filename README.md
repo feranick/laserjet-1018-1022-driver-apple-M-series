@@ -127,6 +127,29 @@ Then set up the printer:
 sudo ./uninstall.sh
 ```
 
+## Network printing (printer on a router's USB port)
+
+The driver runs on the Mac, so the printer can sit on any print server
+that passes raw data through to it, such as a router's USB port. The
+1018 and 1020 need their firmware uploaded after every power-on. Over
+the network the driver cannot ask the printer which firmware it runs,
+so let the print server upload it, and set the driver's firmware upload
+to Never:
+
+```sh
+sudo lpadmin -p HP1018 -E -v "socket://ROUTER_IP:9100?waiteof=false" \
+  -P /Library/Printers/PPDs/Contents/Resources/HP-LaserJet-1018-hpzjs.ppd \
+  -o zjsFirmware=Never
+```
+
+Do not use "Before every job" for a printer that is already running: a
+1018 that already has its firmware does not accept a second upload, and
+the print server's USB port then stays blocked.
+
+For ASUS routers running Asuswrt-Merlin, see
+[`contrib/asuswrt-merlin`](contrib/asuswrt-merlin/README.md). It has a
+script that uploads the firmware whenever the printer is switched on.
+
 ## Printer options
 
 | Option | Values |
@@ -169,6 +192,8 @@ Verification:
   emulation. Output was byte-identical on 35 test bitmaps.
 - **Complete ZjStream:** compared with HP's code for multi-page jobs at
   600 and 1200 dpi. Output was byte-identical.
+- **Hardware:** prints on a LaserJet 1018, on macOS on Apple Silicon,
+  through an ASUS RT-AC68U running Asuswrt-Merlin.
 
 The halftone screen is original: HP's halftone tables were not copied.
 
@@ -202,4 +227,5 @@ src/jbig_enc.[ch]     JBIG1 (T.82) encoder
 src/halftone.[ch]     8-bit gray to 1-bit (screen / error diffusion / threshold)
 src/firmware.[ch]     1018/1020 firmware version query and upload
 src/commandtozjs.c    CUPS command filter (cleaning page)
+contrib/asuswrt-merlin/  firmware auto-upload for a printer on an ASUS router
 ```
