@@ -294,7 +294,7 @@ int jbig_encode(const unsigned char *bitmap, size_t stride,
      * It is carried across stripe boundaries, as is the context state. */
     int ltp_old = 0;
 
-    for (uint32_t stripe = 0; y < height; stripe++) {
+    while (y < height) {                /* one iteration per stripe */
         uint32_t yend = y + l0 < height ? y + l0 : height;
 
         qm_init(q, &sink, 0);   /* SDNORM: states carry over */
