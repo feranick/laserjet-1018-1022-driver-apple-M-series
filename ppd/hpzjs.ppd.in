@@ -32,7 +32,6 @@
 *cupsFilter: "application/vnd.cups-command 100 /Library/Printers/hpzjs/filter/commandtozjs"
 *cupsCommands: "Clean ReportLevels"
 *cupsMarkerName black/Black: ""
-*APPrinterIconPath: "/Library/Printers/hpzjs/icons/HP LaserJet.icns"
 *JCLBegin: "<1B>%-12345X@PJL JOB<0A>"
 *JCLToPSInterpreter: "@PJL ENTER LANGUAGE = ZJS <0A>"
 *JCLEnd: "<1B>%-12345X@PJL EOJ<0A><1B>%-12345X"

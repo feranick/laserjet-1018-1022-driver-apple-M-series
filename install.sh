@@ -2,7 +2,7 @@
 # hpzjs installer - native driver for HP LaserJet 1018 / 1020 / 1022
 # Copyright (c) 2026 Nicola Ferralis - SPDX-License-Identifier: MIT
 #
-# Usage:  sudo ./install.sh [firmware files...]
+# Usage:  sudo ./install.sh [firmware files...] [icon.icns]
 #         e.g. sudo ./install.sh ~/firmwares/sihp1018.dl ~/firmwares/sihp1020.dl
 #
 # Works from the source tree (builds first) or from a binary release
@@ -83,8 +83,11 @@ take_firmware() {
     esac
     return 0
 }
+ICON=""
 for f in "$@"; do
-    if [ -f "$f" ]; then
+    if [ -f "$f" ] && [ "${f##*.}" = "icns" ]; then
+        ICON="$f"
+    elif [ -f "$f" ]; then
         take_firmware "$f"
     else
         echo "WARNING: $f not found" >&2
@@ -127,15 +130,30 @@ if [ ! -f "$PREFIX/firmware/hp1018.fw" ]; then
     echo "         (HP's hp1020.acl or foo2zjs' sihp1018.dl / sihp1020.dl)"
 fi
 
-# ---- icon (optional, from HP's driver if installed) -----------------------
-if [ -f "$HPRES/HP LaserJet 1022.icns" ]; then
-    install -o root -g wheel -m 644 "$HPRES/HP LaserJet 1022.icns" \
-        "$PREFIX/icons/HP LaserJet.icns"
+# ---- icon (optional: an .icns given as argument, or HP's if installed) ----
+# The PPDs reference the icon only when it is really installed: macOS reports
+# "Software for the printer is missing" if a file named by the PPD is absent.
+[ -z "$ICON" ] && [ -f "$HPRES/HP LaserJet 1022.icns" ] && ICON="$HPRES/HP LaserJet 1022.icns"
+ICONDST="$PREFIX/icons/HP LaserJet.icns"
+if [ -n "$ICON" ]; then
+    echo "==> Installing icon from $ICON"
+    install -o root -g wheel -m 644 "$ICON" "$ICONDST"
 fi
 
 echo "==> Installing PPDs in $PPDDIR"
 install -d -m 755 "$PPDDIR"
-install -o root -g wheel -m 644 build/ppd/*.ppd "$PPDDIR/"
+for ppd in build/ppd/*.ppd; do
+    dst="$PPDDIR/$(basename "$ppd")"
+    if [ -f "$ICONDST" ]; then
+        awk -v icon="$ICONDST" '{ print }
+            /^\*cupsMarkerName/ { printf "*APPrinterIconPath: \"%s\"\n", icon }' \
+            "$ppd" > "$dst"
+    else
+        cp "$ppd" "$dst"
+    fi
+    chown root:wheel "$dst"
+    chmod 644 "$dst"
+done
 
 # Let cupsd pick up the new drivers
 launchctl kickstart -k system/org.cups.cupsd 2>/dev/null || true

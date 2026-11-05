@@ -103,6 +103,13 @@ The installer:
 To change the firmware later, run the installer again with the new
 file(s).
 
+A printer icon is optional. The installer uses HP's `HP LaserJet 1022.icns`
+if HP's driver is installed, or any `.icns` file passed on the command
+line, for example
+`sudo ./install.sh sihp1018.dl "HP LaserJet 1022.icns"`. The PPDs
+reference the icon only when one is actually installed. If a file named
+in a PPD is missing, macOS reports "Software for the printer is missing".
+
 Then set up the printer:
 
 - **New printer:** in System Settings → Printers & Scanners, choose Add
