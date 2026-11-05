@@ -14,12 +14,21 @@ Version: 2026.11.05.1 · License: MIT
   ```sh
   xcode-select --install
   ```
-- For the **LaserJet 1018 and 1020**: the firmware file `hp1020.acl`.
-  These two models keep their firmware in RAM, so the driver uploads it
-  after every power-on. The file comes with HP's driver at
-  `/Library/Printers/hp/laserjet/hplaserjetzjs.bundle/Contents/Resources/hp1020.acl`
-  and is **not** distributed with this project.
-  The 1022 has its firmware in ROM and does not need it.
+- For the **LaserJet 1018 and 1020**: a firmware file. These two models
+  keep their firmware in RAM, so the driver uploads it after every
+  power-on. The 1022 has its firmware in ROM and does not need it.
+  Firmware is **not** distributed with this project. Either format works:
+
+  | File | Source | Version |
+  |---|---|---|
+  | `sihp1018.dl` | foo2zjs (from HP's Windows driver), 1018-specific | 20051028 |
+  | `sihp1020.dl` | foo2zjs, 1020 | 20041129 |
+  | `hp1020.acl` | HP's Mac driver, `hplaserjetzjs.bundle/Contents/Resources/` | 20050309 |
+
+  A `.dl` file is the same firmware image as an `.acl`, already wrapped
+  for upload (`@PJL ENTER LANGUAGE=ACL` + `00 ac c0 de` + length + image
+  + UEL). The driver accepts both. With a `.dl` file, it sends exactly
+  the bytes of that file, just as foo2zjs does.
 
 ## Compiling
 
@@ -65,19 +74,34 @@ From the source tree, or from an unpacked binary release:
 sudo ./install.sh
 ```
 
-If `hp1020.acl` is not at its usual place, give its path:
+Pass the firmware file(s) on the command line:
 
 ```sh
-sudo ./install.sh /path/to/hp1020.acl
+sudo ./install.sh /path/to/sihp1018.dl                     # LaserJet 1018
+sudo ./install.sh /path/to/sihp1018.dl /path/to/sihp1020.dl  # 1018 and 1020
+sudo ./install.sh /path/to/hp1020.acl                      # HP's Mac firmware
 ```
+
+The model is taken from the file name: a name containing `1018` is used
+for the 1018, one containing `1020` for the 1020. With no arguments, the
+installer looks for HP's `hp1020.acl` in `/Library/Printers/hp/…` and for
+foo2zjs files in `/usr/local/share/foo2zjs/firmware` and
+`/opt/homebrew/share/foo2zjs/firmware`. If only a 1020 image is found,
+the 1018 uses it too, as HP's own Mac driver did. Prefer
+`sihp1018.dl` for a 1018 if you have it.
 
 The installer:
 
 - builds the driver when it is run from the source tree;
 - installs the filters to `/Library/Printers/hpzjs/filter/`;
-- installs the firmware to `/Library/Printers/hpzjs/firmware/hp1020.acl`;
+- installs the firmware as `/Library/Printers/hpzjs/firmware/hp1018.fw`
+  and `hp1020.fw`; the 1018 PPD uses `hp1018.fw`, the 1020 and 1022
+  PPDs use `hp1020.fw`;
 - installs the PPDs to `/Library/Printers/PPDs/Contents/Resources/`;
 - restarts `cupsd`.
+
+To change the firmware later, run the installer again with the new
+file(s).
 
 Then set up the printer:
 
@@ -113,10 +137,11 @@ The protocol was recovered by reverse engineering HP's `rasterToHPZJS`
 
 - **Firmware (1018/1020).** Before each job, the filter asks the printer
   for its firmware version through the CUPS back channel (ACL query
-  `00 ac 00 01 …`). If the printer's version is older than the `.acl`
-  file, the filter sends `@PJL ENTER LANGUAGE=ACL`, then
-  `00 ac c0 de <size-8>`, then the file, then UEL, and waits for the
-  printer to come back online. If the printer does not answer, the
+  `00 ac 00 01 …`). The firmware image starts with an 8-digit version
+  date. If the printer's version is older, the filter sends
+  `@PJL ENTER LANGUAGE=ACL`, then `00 ac c0 de <size-8>`, then the
+  image, then UEL, and waits for the printer to come back online. This
+  is the same byte stream as a foo2zjs `.dl` file. If the printer does not answer, the
   filter checks the IEEE-1284 device ID for `FWVER` instead.
 - **Job stream.** A job is sent as:
   1. PJL, ending with `@PJL ENTER LANGUAGE = ZJS`;

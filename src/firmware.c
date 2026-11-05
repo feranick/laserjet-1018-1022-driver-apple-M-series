@@ -170,7 +170,8 @@ static int send_firmware(FILE *out, const unsigned char *fw, size_t len)
 int fw_ensure(FILE *out, const char *path, fw_mode_t mode)
 {
     FILE *f;
-    unsigned char *fw;
+    unsigned char *fw, *payload;
+    size_t psize, hdr;
     long size, file_ver, dev_ver = -1;
     int rc = 0, need = 0;
 
@@ -196,9 +197,26 @@ int fw_ensure(FILE *out, const char *path, fw_mode_t mode)
     }
     fclose(f);
 
-    file_ver = parse_version(fw);
-    if (file_ver < 0) {
-        fprintf(stderr, "WARNING: %s is not an HP .acl firmware file\n", path);
+    /* foo2zjs ".dl" files (e.g. sihp1018.dl) are the same image already
+     * wrapped for download: ENTER_ACL + 00 ac c0 de + len + image + UEL.
+     * Unwrap them; send_firmware() re-creates the identical byte stream. */
+    payload = fw;
+    psize = (size_t)size;
+    hdr = sizeof(ENTER_ACL) - 1 + 8;
+    if (psize > hdr && !memcmp(fw, ENTER_ACL, sizeof(ENTER_ACL) - 1) &&
+        !memcmp(fw + sizeof(ENTER_ACL) - 1, "\x00\xac\xc0\xde", 4)) {
+        payload = fw + hdr;
+        psize -= hdr;
+        if (psize >= sizeof(UEL) - 1 &&
+            !memcmp(payload + psize - (sizeof(UEL) - 1), UEL, sizeof(UEL) - 1))
+            psize -= sizeof(UEL) - 1;
+        dbg("unwrapped .dl firmware file ", path);
+    }
+
+    file_ver = psize > 12 ? parse_version(payload) : -1;
+    if (file_ver < 0 || memcmp(payload + 8, "\177ELF", 4)) {
+        fprintf(stderr, "WARNING: %s is not an HP firmware file (.acl or "
+                ".dl)\n", path);
         free(fw);
         return -1;
     }
@@ -222,7 +240,7 @@ int fw_ensure(FILE *out, const char *path, fw_mode_t mode)
     }
 
     if (need)
-        rc = send_firmware(out, fw, (size_t)size);
+        rc = send_firmware(out, payload, psize);
     else
         dbg("printer does not need firmware", NULL);
     free(fw);

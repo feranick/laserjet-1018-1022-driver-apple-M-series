@@ -2,14 +2,15 @@
 # hpzjs installer - native driver for HP LaserJet 1018 / 1020 / 1022
 # Copyright (c) 2026 Nicola Ferralis - SPDX-License-Identifier: MIT
 #
-# Usage:  sudo ./install.sh [path/to/hp1020.acl]
+# Usage:  sudo ./install.sh [firmware files...]
+#         e.g. sudo ./install.sh ~/firmwares/sihp1018.dl ~/firmwares/sihp1020.dl
 #
 # Works from the source tree (builds first) or from a binary release
 # (uses the prebuilt files in build/).
 #
 # Installs:
 #   /Library/Printers/hpzjs/filter/{rastertozjs,commandtozjs}
-#   /Library/Printers/hpzjs/firmware/hp1020.acl   (copied from HP's driver)
+#   /Library/Printers/hpzjs/firmware/hp1018.fw, hp1020.fw  (.acl or .dl)
 #   /Library/Printers/PPDs/Contents/Resources/HP-LaserJet-10xx-hpzjs.ppd
 set -e
 
@@ -55,20 +56,75 @@ install -o root -g wheel -m 755 build/rastertozjs build/commandtozjs \
     "$PREFIX/filter/"
 
 # ---- firmware (needed by the 1018 and 1020 after every power-on) ----------
-FW=""
-for f in "$1" "$HPRES/hp1020.acl" "$PREFIX/firmware/hp1020.acl"; do
-    if [ -n "$f" ] && [ -f "$f" ]; then FW="$f"; break; fi
+# Accepted: HP's hp1020.acl and foo2zjs' sihp1018.dl / sihp1020.dl.
+# Files named on the command line win over the default locations. The
+# model is taken from the file name (1018 / 1020); a file with neither in
+# its name is used for both. Installed as firmware/hp1018.fw, hp1020.fw.
+is_firmware() {
+    local magic
+    magic=$(head -c 12 "$1" 2>/dev/null | LC_ALL=C tr -c '0-9A-Za-z' '.')
+    case "$magic" in
+        [0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9].ELF) return 0 ;;
+    esac
+    head -c 32 "$1" 2>/dev/null | LC_ALL=C grep -q "ENTER LANGUAGE=ACL"
+}
+
+FW1018=""; FW1020=""
+take_firmware() {
+    if ! is_firmware "$1"; then
+        echo "WARNING: $1 is not an HP firmware file (.acl or .dl), skipped" >&2
+        return
+    fi
+    case "$(basename "$1")" in
+        *1018*) [ -z "$FW1018" ] && FW1018="$1" ;;
+        *1020*) [ -z "$FW1020" ] && FW1020="$1" ;;
+        *)      [ -z "$FW1018" ] && FW1018="$1"
+                [ -z "$FW1020" ] && FW1020="$1" ;;
+    esac
+    return 0
+}
+for f in "$@"; do
+    if [ -f "$f" ]; then
+        take_firmware "$f"
+    else
+        echo "WARNING: $f not found" >&2
+    fi
 done
-if [ "$FW" = "$PREFIX/firmware/hp1020.acl" ]; then
-    echo "==> Keeping installed firmware $FW"
-elif [ -n "$FW" ]; then
-    echo "==> Installing firmware from $FW"
-    install -o root -g wheel -m 644 "$FW" "$PREFIX/firmware/hp1020.acl"
-else
-    echo "WARNING: hp1020.acl not found. The LaserJet 1018/1020 need it after"
-    echo "         every power-on. It is part of HP's hplaserjetzjs.bundle"
-    echo "         (Contents/Resources/hp1020.acl). Re-run:"
-    echo "             sudo $0 /path/to/hp1020.acl"
+for f in "$HPRES/hp1020.acl" \
+         /usr/local/share/foo2zjs/firmware/sihp1018.dl \
+         /usr/local/share/foo2zjs/firmware/sihp1020.dl \
+         /opt/homebrew/share/foo2zjs/firmware/sihp1018.dl \
+         /opt/homebrew/share/foo2zjs/firmware/sihp1020.dl
+do
+    if [ -f "$f" ]; then take_firmware "$f"; fi
+done
+# Upgrade from earlier versions that installed firmware/hp1020.acl
+if [ -z "$FW1020" ] && [ -f "$PREFIX/firmware/hp1020.acl" ]; then
+    FW1020="$PREFIX/firmware/hp1020.acl"
+fi
+
+for m in 1018 1020; do
+    eval src=\$FW$m
+    dst="$PREFIX/firmware/hp$m.fw"
+    if [ -n "$src" ]; then
+        echo "==> Firmware for LaserJet $m: $src"
+        install -o root -g wheel -m 644 "$src" "$dst"
+    elif [ -f "$dst" ]; then
+        echo "==> Keeping installed firmware $dst"
+    fi
+done
+# HP's own Mac driver used the 1020 image for the 1018 as well
+if [ ! -f "$PREFIX/firmware/hp1018.fw" ] && [ -f "$PREFIX/firmware/hp1020.fw" ]; then
+    echo "==> No 1018-specific firmware given: using the 1020 image for the 1018"
+    install -o root -g wheel -m 644 "$PREFIX/firmware/hp1020.fw" \
+        "$PREFIX/firmware/hp1018.fw"
+fi
+rm -f "$PREFIX/firmware/hp1020.acl"
+if [ ! -f "$PREFIX/firmware/hp1018.fw" ]; then
+    echo "WARNING: no firmware installed. The LaserJet 1018/1020 need it after"
+    echo "         every power-on. Re-run with the firmware file(s), e.g.:"
+    echo "             sudo $0 /path/to/sihp1018.dl"
+    echo "         (HP's hp1020.acl or foo2zjs' sihp1018.dl / sihp1020.dl)"
 fi
 
 # ---- icon (optional, from HP's driver if installed) -----------------------

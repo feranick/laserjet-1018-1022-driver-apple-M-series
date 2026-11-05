@@ -41,11 +41,15 @@ build/commandtozjs: src/commandtozjs.c | build
 	$(CC) $(CFLAGS) -o $@ $<
 	$(SIGN) $@
 
-# 1018/1020/1022 share the engine; only names and speed differ.
+# 1018/1020/1022 share the engine; only names, speed and firmware differ.
+# Firmware: 1018 -> hp1018.fw, 1020 and 1022 -> hp1020.fw (the 1022 has
+# its firmware in ROM; HP's 1022 driver referenced the 1020 image too).
 build/ppd/HP-LaserJet-%-hpzjs.ppd: ppd/hpzjs.ppd.in | build
-	ppm=12; [ "$*" = "1022" ] && ppm=18; [ "$*" = "1020" ] && ppm=14; \
+	ppm=12; fw=1020; \
+	[ "$*" = "1022" ] && ppm=18; [ "$*" = "1020" ] && ppm=14; \
+	[ "$*" = "1018" ] && fw=1018; \
 	sed -e "s/@MODEL@/$*/g" -e "s/@MODELNUM@/$*/g" -e "s/@VERSION@/$(VERSION)/g" \
-	    -e "s/@PPM@/$$ppm/g" $< > $@
+	    -e "s/@PPM@/$$ppm/g" -e "s/@FWMODEL@/$$fw/g" $< > $@
 
 install: all
 	sudo ./install.sh

@@ -39,7 +39,7 @@
 *%
 *% Firmware: the LaserJet 1018 and 1020 lose their firmware at power off;
 *% it is uploaded automatically before the first job when needed.
-*zjsFirmwareFile: "/Library/Printers/hpzjs/firmware/hp1020.acl"
+*zjsFirmwareFile: "/Library/Printers/hpzjs/firmware/hp@FWMODEL@.fw"
 *%
 *OpenUI *Resolution/Resolution: PickOne
 *OrderDependency: 10 AnySetup *Resolution

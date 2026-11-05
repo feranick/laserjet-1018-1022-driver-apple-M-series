@@ -17,7 +17,8 @@ typedef enum {
 
 /*
  * Make sure the printer runs the firmware contained in 'path' (an HP
- * ".acl" file: 8 ASCII digits of version followed by the image).
+ * ".acl" file - 8 ASCII digits of version followed by the image - or the
+ * same image wrapped for download, as in the foo2zjs ".dl" files).
  * Data is written to 'out' (the printer, i.e. stdout of the filter);
  * replies are read through the CUPS back channel.
  * Returns 1 if firmware was sent, 0 if not needed, -1 on error.
