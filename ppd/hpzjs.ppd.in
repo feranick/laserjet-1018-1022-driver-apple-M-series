@@ -9,10 +9,10 @@
 *FileVersion: "@VERSION@"
 *LanguageVersion: English
 *LanguageEncoding: ISOLatin1
-*PCFileName: "HPZJS@MODELNUM@.PPD"
+*PCFileName: "HPZ@MODELNUM@.PPD"
 *Product: "(HP LaserJet @MODEL@)"
 *Manufacturer: "HP"
-*ModelName: "HP LaserJet @MODEL@ (hpzjs)"
+*ModelName: "HP LaserJet @MODEL@ hpzjs"
 *ShortNickName: "HP LaserJet @MODEL@ hpzjs"
 *NickName: "HP LaserJet @MODEL@, hpzjs @VERSION@"
 *1284DeviceID: "MFG:Hewlett-Packard;MDL:HP LaserJet @MODEL@;"
@@ -84,7 +84,7 @@
 *PageSize A5/A5: "<</PageSize[420 595]/ImagingBBox null>>setpagedevice"
 *PageSize A6/A6: "<</PageSize[297 420]/ImagingBBox null>>setpagedevice"
 *PageSize B5/JIS B5: "<</PageSize[516 729]/ImagingBBox null>>setpagedevice"
-*PageSize 84x84mm/CD or DVD 80 mm: "<</PageSize[237 237]/ImagingBBox null>>setpagedevice"
+*PageSize 83.61x83.61mm/CD or DVD 80 mm: "<</PageSize[237 237]/ImagingBBox null>>setpagedevice"
 *PageSize 5x5/CD or DVD 120 mm: "<</PageSize[360 360]/ImagingBBox null>>setpagedevice"
 *PageSize Env10/Envelope #10: "<</PageSize[297 684]/ImagingBBox null>>setpagedevice"
 *PageSize EnvC5/Envelope C5: "<</PageSize[459 649]/ImagingBBox null>>setpagedevice"
@@ -112,7 +112,7 @@
 *PageRegion A5/A5: "<</PageSize[420 595]/ImagingBBox null>>setpagedevice"
 *PageRegion A6/A6: "<</PageSize[297 420]/ImagingBBox null>>setpagedevice"
 *PageRegion B5/JIS B5: "<</PageSize[516 729]/ImagingBBox null>>setpagedevice"
-*PageRegion 84x84mm/CD or DVD 80 mm: "<</PageSize[237 237]/ImagingBBox null>>setpagedevice"
+*PageRegion 83.61x83.61mm/CD or DVD 80 mm: "<</PageSize[237 237]/ImagingBBox null>>setpagedevice"
 *PageRegion 5x5/CD or DVD 120 mm: "<</PageSize[360 360]/ImagingBBox null>>setpagedevice"
 *PageRegion Env10/Envelope #10: "<</PageSize[297 684]/ImagingBBox null>>setpagedevice"
 *PageRegion EnvC5/Envelope C5: "<</PageSize[459 649]/ImagingBBox null>>setpagedevice"
@@ -138,7 +138,7 @@
 *ImageableArea A5/A5: "18 14.39999961853 402 580.599975585938"
 *ImageableArea A6/A6: "18 14.39999961853 279 405.600006103516"
 *ImageableArea B5/JIS B5: "18 14.39999961853 498 714.599975585938"
-*ImageableArea 84x84mm/CD or DVD 80 mm: "18 14.39999961853 219 222.600006103516"
+*ImageableArea 83.61x83.61mm/CD or DVD 80 mm: "18 14.39999961853 219 222.600006103516"
 *ImageableArea 5x5/CD or DVD 120 mm: "18 14.39999961853 342 345.600006103516"
 *ImageableArea Env10/Envelope #10: "18 14.39999961853 279 669.599975585938"
 *ImageableArea EnvC5/Envelope C5: "18 14.39999961853 441 634.599975585938"
@@ -162,7 +162,7 @@
 *PaperDimension A5/A5: "420 595"
 *PaperDimension A6/A6: "297 420"
 *PaperDimension B5/JIS B5: "516 729"
-*PaperDimension 84x84mm/CD or DVD 80 mm: "237 237"
+*PaperDimension 83.61x83.61mm/CD or DVD 80 mm: "237 237"
 *PaperDimension 5x5/CD or DVD 120 mm: "360 360"
 *PaperDimension Env10/Envelope #10: "297 684"
 *PaperDimension EnvC5/Envelope C5: "459 649"
@@ -218,7 +218,7 @@
 *DefaultJamRecovery: False
 *JamRecovery True/Yes: "@PJL SET JAMRECOVERY=ON <0A>"
 *JamRecovery False/No: "@PJL SET JAMRECOVERY=OFF <0A>"
-*CloseUI: *JamRecovery
+*JCLCloseUI: *JamRecovery
 
 *JCLOpenUI *PrintDensity/Print Density: PickOne
 *OrderDependency: 11.1 JCLSetup *PrintDensity
@@ -228,7 +228,7 @@
 *PrintDensity 3/3: "@PJL SET DENSITY=3 <0A>"
 *PrintDensity 4/4: "@PJL SET DENSITY=4 <0A>"
 *PrintDensity 5/5: "@PJL SET DENSITY=5 <0A>"
-*CloseUI: *PrintDensity
+*JCLCloseUI: *PrintDensity
 
 *OpenUI *REt/REt: Boolean
 *OrderDependency: 10 AnySetup *REt

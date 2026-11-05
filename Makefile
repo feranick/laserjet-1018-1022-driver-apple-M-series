@@ -51,6 +51,13 @@ build/ppd/HP-LaserJet-%-hpzjs.ppd: ppd/hpzjs.ppd.in | build
 	sed -e "s/@MODEL@/$*/g" -e "s/@MODELNUM@/$*/g" -e "s/@VERSION@/$(VERSION)/g" \
 	    -e "s/@PPM@/$$ppm/g" -e "s/@FWMODEL@/$$fw/g" $< > $@
 
+# Validate the generated PPDs (filters need not be installed for this)
+check: $(PPDS)
+	@for p in $(PPDS); do \
+	    cupstestppd -W all $$p 2>&1 | grep -v 'Missing cupsFilter file'; \
+	    cupstestppd -W all $$p 2>&1 | grep -q 'FAIL' && exit 1; \
+	done; echo "PPDs OK"
+
 install: all
 	sudo bash ./install.sh
 
@@ -58,7 +65,7 @@ uninstall:
 	sudo bash ./uninstall.sh
 
 # Binary release: dist/hpzjs-VERSION-macos.tar.gz
-dist: all
+dist: all check
 	rm -rf dist/$(DIST)
 	mkdir -p dist/$(DIST)/build/ppd
 	cp build/rastertozjs build/commandtozjs dist/$(DIST)/build/
@@ -70,4 +77,4 @@ dist: all
 clean:
 	rm -rf build dist
 
-.PHONY: all install uninstall dist clean
+.PHONY: all check install uninstall dist clean
