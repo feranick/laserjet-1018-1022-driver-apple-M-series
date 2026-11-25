@@ -1,7 +1,7 @@
 *PPD-Adobe: "4.3"
 *%
 *% HP LaserJet @MODEL@ - native ZjStream driver (hpzjs @VERSION@)
-*% Filter: rastertozjs (arm64 + x86_64), no Rosetta required.
+*% Filter: spooling_filter -> rastertozjs (arm64 + x86_64), no Rosetta required.
 *% Copyright (c) 2026 Nicola Ferralis - SPDX-License-Identifier: MIT
 *% Page sizes, margins and media types follow HP's original 1.6.1 PPD.
 *%
@@ -28,7 +28,7 @@
 *cupsModelNumber: 4
 *cupsManualCopies: True
 *cupsLanguages: "en"
-*cupsFilter: "application/vnd.cups-raster 100 /Library/Printers/hpzjs/filter/rastertozjs"
+*cupsFilter: "application/vnd.cups-raster 100 /Library/Printers/hpzjs/filter/spooling_filter"
 *cupsFilter: "application/vnd.cups-command 100 /Library/Printers/hpzjs/filter/commandtozjs"
 *cupsCommands: "Clean ReportLevels"
 *cupsMarkerName black/Black: ""

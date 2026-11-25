@@ -43,6 +43,29 @@ static void on_term(int sig)
     canceled = 1;
 }
 
+static FILE *open_live_output(void)
+{
+    const char *value = getenv("HPZJS_LIVE_FD");
+    char *end = NULL;
+    long fd;
+    FILE *live;
+
+    if (!value)
+        return stdout;
+    fd = strtol(value, &end, 10);
+    if (!*value || *end || fd < 3 || fd > 1024) {
+        fputs("ERROR: Invalid HPZJS_LIVE_FD\n", stderr);
+        return NULL;
+    }
+    live = fdopen((int)fd, "wb");
+    if (!live) {
+        fprintf(stderr, "ERROR: Unable to open live output FD %ld\n", fd);
+        return NULL;
+    }
+    setvbuf(live, NULL, _IONBF, 0);
+    return live;
+}
+
 /* ---- ZjStream writer ----------------------------------------------------- */
 
 static FILE *out;
@@ -275,6 +298,7 @@ int main(int argc, char *argv[])
     int num_opts = 0;
     job_opts_t jo;
     struct sigaction sa;
+    FILE *live;
 
     setbuf(stderr, NULL);
     out = stdout;
@@ -289,6 +313,10 @@ int main(int argc, char *argv[])
                 "filter\n", argv[0], HPZJS_VERSION);
         return 1;
     }
+
+    live = open_live_output();
+    if (!live)
+        return 1;
 
     memset(&sa, 0, sizeof(sa));
     sa.sa_handler = on_term;
@@ -333,7 +361,11 @@ int main(int argc, char *argv[])
 
         if (page == 1) {
             if (jo.fw_path)
-                fw_ensure(out, jo.fw_path, jo.fw_mode);
+                fw_ensure(live, jo.fw_path, jo.fw_mode);
+            if (live != stdout) {
+                fclose(live);
+                live = NULL;
+            }
             if (ppd)
                 ppdEmitJCL(ppd, out, atoi(argv[1]), argv[2], argv[3]);
             else
@@ -358,9 +390,16 @@ int main(int argc, char *argv[])
         }
 
         for (uint32_t y = 0; y < hgt && !canceled; y++) {
-            if (cupsRasterReadPixels(ras, line, h.cupsBytesPerLine) !=
-                h.cupsBytesPerLine)
+            size_t got = cupsRasterReadPixels(ras, line, h.cupsBytesPerLine);
+            if (got != h.cupsBytesPerLine) {
+                if (!canceled) {
+                    fprintf(stderr, "ERROR: Short raster read on page %d "
+                            "(%lu of %u bytes)\n", page,
+                            (unsigned long)got, h.cupsBytesPerLine);
+                    status = 1;
+                }
                 break;
+            }
             if (convert_line(&h, line, k) < 0) {
                 fprintf(stderr, "ERROR: Unsupported raster format (%u bpp, "
                         "color space %u)\n", h.cupsBitsPerPixel,
@@ -374,7 +413,7 @@ int main(int argc, char *argv[])
         free(line);
         free(k);
 
-        if (status) {
+        if (status || canceled) {
             free(bitmap);
             break;
         }
@@ -402,8 +441,13 @@ int main(int argc, char *argv[])
         zjs_start_page(&pi);
         zjs_jbig(&bie);
         zjs_chunk(ZJT_END_PAGE, 0, 0);
-        fflush(out);
+        if (fflush(out) == EOF || ferror(out)) {
+            fputs("ERROR: Unable to write ZjStream output\n", stderr);
+            status = 1;
+        }
         jbig_buf_free(&bie);
+        if (status)
+            break;
 
         fprintf(stderr, "PAGE: %d %u\n", page, pi.copies);
     }
@@ -414,7 +458,10 @@ int main(int argc, char *argv[])
             ppdEmitJCLEnd(ppd, out);
         else
             fputs("\033%-12345X@PJL EOJ\n\033%-12345X", out);
-        fflush(out);
+        if (fflush(out) == EOF || ferror(out)) {
+            fputs("ERROR: Unable to finish ZjStream output\n", stderr);
+            status = 1;
+        }
     }
 
     cupsRasterClose(ras);
@@ -423,6 +470,8 @@ int main(int argc, char *argv[])
     cupsFreeOptions(num_opts, opts);
     if (ppd)
         ppdClose(ppd);
+    if (live && live != stdout)
+        fclose(live);
 
     if (page == 0 && !status)
         fputs("INFO: No pages found\n", stderr);

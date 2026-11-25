@@ -58,6 +58,7 @@ This produces:
 ```
 build/rastertozjs                         raster filter (universal, ad-hoc signed)
 build/commandtozjs                        command filter (cleaning page)
+build/spooling_filter                     buffering/cancellation wrapper
 build/ppd/HP-LaserJet-1018-hpzjs.ppd
 build/ppd/HP-LaserJet-1020-hpzjs.ppd
 build/ppd/HP-LaserJet-1022-hpzjs.ppd
@@ -75,6 +76,7 @@ Other `make` targets:
 | Target | Action |
 |---|---|
 | `make dist` | builds `dist/hpzjs-<version>-macos.tar.gz`, a binary release with the filters, PPDs, install scripts, README and LICENSE |
+| `make test` | checks buffering, cancellation and temporary-file cleanup without printing |
 | `make install` | same as `sudo ./install.sh` |
 | `make uninstall` | same as `sudo ./uninstall.sh` |
 | `make clean` | removes `build/` and `dist/` |
@@ -203,6 +205,13 @@ The protocol was recovered by reverse engineering HP's `rasterToHPZJS`
      (≤ 64 KiB, the last one padded to 16 bytes), END_JBIG, END_PAGE;
   5. END_DOC;
   6. PJL end.
+- **Buffering.** `spooling_filter` gives `rastertozjs` a live output
+  descriptor for firmware negotiation, then renders the complete ZjStream
+  into an anonymous `TMPDIR` file before the CUPS USB backend receives print
+  data. This keeps raster generation separate from a long USB transfer.
+  SIGTERM stops both rendering and any already-started output copy, and the
+  file descriptor is unlinked immediately so cancellation does not leave
+  print data behind.
 - **Compression.** Pages are compressed with JBIG1 (ITU-T T.82): one
   layer, two-line template, TPBON, 128-line stripes, BIH options 0x5c.
 - **Page geometry.** Width is padded to 64 pixels and height to 8 lines.
@@ -244,6 +253,7 @@ install.sh            installer (source tree or binary release)
 uninstall.sh
 ppd/hpzjs.ppd.in      PPD template; make generates the 1018/1020/1022 PPDs
 src/rastertozjs.c     CUPS raster filter: PJL + ZjStream writer
+src/spooling_filter.c buffered output and cancellation wrapper
 src/zjs.h             ZjStream protocol constants
 src/jbig_enc.[ch]     JBIG1 (T.82) encoder
 src/halftone.[ch]     8-bit gray to 1-bit (screen / error diffusion / threshold)

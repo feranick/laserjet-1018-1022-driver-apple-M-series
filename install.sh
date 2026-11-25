@@ -9,7 +9,7 @@
 # (uses the prebuilt files in build/).
 #
 # Installs:
-#   /Library/Printers/hpzjs/filter/{rastertozjs,commandtozjs}
+#   /Library/Printers/hpzjs/filter/{rastertozjs,commandtozjs,spooling_filter}
 #   /Library/Printers/hpzjs/firmware/hp1018.fw, hp1020.fw  (.acl or .dl)
 #   /Library/Printers/PPDs/Contents/Resources/HP-LaserJet-10xx-hpzjs.ppd
 set -e
@@ -41,7 +41,7 @@ if [ -f Makefile ] && [ -d src ]; then
         make
     fi
 fi
-for f in build/rastertozjs build/commandtozjs; do
+for f in build/rastertozjs build/commandtozjs build/spooling_filter; do
     if ! file "$f" 2>/dev/null | grep -q Mach-O; then
         echo "Missing or invalid $f" >&2
         exit 1
@@ -53,6 +53,7 @@ echo "==> Installing filters in $PREFIX/filter"
 install -d -o root -g wheel -m 755 "$PREFIX" "$PREFIX/filter" \
     "$PREFIX/firmware" "$PREFIX/icons"
 install -o root -g wheel -m 755 build/rastertozjs build/commandtozjs \
+    build/spooling_filter \
     "$PREFIX/filter/"
 
 # ---- firmware (needed by the 1018 and 1020 after every power-on) ----------

@@ -22,6 +22,7 @@ int main(int argc, char *argv[])
 {
     FILE *in = stdin;
     char line[1024];
+    int status = 0;
 
     setbuf(stderr, NULL);
     if (argc < 6 || argc > 7) {
@@ -58,8 +59,12 @@ int main(int argc, char *argv[])
             fprintf(stderr, "DEBUG: Ignoring unsupported command \"%s\"\n", p);
         }
     }
-    fflush(stdout);
+    if (fflush(stdout) == EOF || ferror(stdout)) {
+        fprintf(stderr, "ERROR: Unable to write command output: %s\n",
+                strerror(errno));
+        status = 1;
+    }
     if (in != stdin)
         fclose(in);
-    return 0;
+    return status;
 }

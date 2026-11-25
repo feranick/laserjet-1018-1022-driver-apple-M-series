@@ -28,7 +28,7 @@ CFLAGS += -DHPZJS_VERSION=\"$(VERSION)\"
 PPDS := $(foreach m,$(MODELS),build/ppd/HP-LaserJet-$(m)-hpzjs.ppd)
 DIST := hpzjs-$(VERSION)-macos
 
-all: build/rastertozjs build/commandtozjs $(PPDS)
+all: build/rastertozjs build/commandtozjs build/spooling_filter $(PPDS)
 
 build:
 	mkdir -p build/ppd
@@ -38,6 +38,10 @@ build/rastertozjs: $(SRC) $(HDR) | build
 	$(SIGN) $@
 
 build/commandtozjs: src/commandtozjs.c | build
+	$(CC) $(CFLAGS) -o $@ $<
+	$(SIGN) $@
+
+build/spooling_filter: src/spooling_filter.c | build
 	$(CC) $(CFLAGS) -o $@ $<
 	$(SIGN) $@
 
@@ -52,7 +56,10 @@ build/ppd/HP-LaserJet-%-hpzjs.ppd: ppd/hpzjs.ppd.in | build
 	    -e "s/@PPM@/$$ppm/g" -e "s/@FWMODEL@/$$fw/g" $< > $@
 
 # Validate the generated PPDs (filters need not be installed for this)
-check: $(PPDS)
+test:
+	python3 tests/test_spool_filter.py
+
+check: $(PPDS) test
 	@for p in $(PPDS); do \
 	    cupstestppd -W all $$p 2>&1 | grep -v 'Missing cupsFilter file'; \
 	    cupstestppd -W all $$p 2>&1 | grep -q 'FAIL' && exit 1; \
@@ -68,7 +75,7 @@ uninstall:
 dist: all check
 	rm -rf dist/$(DIST)
 	mkdir -p dist/$(DIST)/build/ppd
-	cp build/rastertozjs build/commandtozjs dist/$(DIST)/build/
+	cp build/rastertozjs build/commandtozjs build/spooling_filter dist/$(DIST)/build/
 	cp $(PPDS) dist/$(DIST)/build/ppd/
 	cp install.sh uninstall.sh README.md LICENSE dist/$(DIST)/
 	tar -C dist -czf dist/$(DIST).tar.gz $(DIST)
@@ -77,4 +84,4 @@ dist: all check
 clean:
 	rm -rf build dist
 
-.PHONY: all check install uninstall dist clean
+.PHONY: all test check install uninstall dist clean
